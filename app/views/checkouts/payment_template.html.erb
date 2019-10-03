@@ -1,0 +1,106 @@
+<title>Integration: <%= @type %></title>
+
+<div id="whole-page">
+  <div id="container">
+    <%= render partial: "customer_form" %>
+    <!--  The checkout integration will be dynamically rendered here -->
+    <!-- e.g., "dropin", "card", "ideal", etc. will be represent the `id` below-->
+    <div class="<%= "payment-container" unless @type == "dropin" %>">
+      <div id=<%= @type %> class="<%= "payment" unless @type == "dropin" %>"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const paymentMethodsResponse = <%= raw @resp %>;
+  const originKey = "<%= @origin_key %>";
+  const type = "<%= @type %>";
+
+  const configuration = {
+    paymentMethodsResponse,
+    originKey,
+    locale: "en_US",
+    environment: "test",
+    onSubmit: handleOnSubmit,
+    onAdditionalDetails: handleOnAdditionalDetails
+  };
+
+  // handleOnSubmit() is invoked when the buyer selects the Pay button.
+
+  // makePayment() hits the server's #create endpoint (see available routes in
+  // config/routes.rb) which will make the API call to /payments.
+
+  // In this demo, Ajax was chosen over Fetch API for browser support
+  // (i.e., Internet Explorer), but you should use what's best for your user base.
+  function handleOnSubmit(state, dropin) {
+    function makePayment(data) {
+      return $.ajax({
+        method: "POST",
+        url: "/checkout",
+        data
+      });
+    }
+
+    if (state.isValid) {
+      makePayment(state.data)
+        .then(res => {
+          if (res.paymentData) {
+            dropin.handleAction(res);
+          }
+        })
+        .catch(error => {
+          throw Error(error);
+        });
+    }
+  }
+
+  // handleAdditionalDetails() is triggered for QR codes and for native
+  // 3D Secure 2 authentication.
+  function handleOnAdditionalDetails(state, dropin) {
+    function makeDetailsCall(data) {
+      return $.ajax({
+        method: "POST",
+        url: "/checkout/details",
+        data
+      });
+    }
+
+    if (state.isValid) {
+      makeDetailsCall(state.data)
+        .then(res => {
+          if (res.paymentData) {
+            dropin.handleAction(res);
+          }
+        })
+        .catch(error => {
+          throw Error(error);
+        });
+    }
+  }
+
+  const checkout = new AdyenCheckout(configuration);
+
+  const integration = checkout
+    .create(type, {
+      // Drop-in currently accepts a nested paymentMethodsConfiguration object.
+      paymentMethodsConfiguration: {
+        ideal: {
+          showImage: true
+        },
+        card: {
+          hasHolderName: true,
+          holderNameRequired: true,
+          name: "Credit or debit card",
+        }
+      },
+      // A Component currently accepts a flat configuration object.
+      showPayButton: true,
+      amount: {
+        value: 1000,
+        currency: "EUR"
+      },
+      hasHolderName: true,
+      holderNameRequired: true
+    })
+    .mount(`#${type}`);
+</script>
