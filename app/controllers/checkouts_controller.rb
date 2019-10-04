@@ -4,8 +4,14 @@ class CheckoutsController < ApplicationController
   def index
   end
 
+  def preview
+    @type = params[:type]
+  end
+
   def new
-    # The call to /paymentMethods will be made as the checkout page is requested
+    # The call to /paymentMethods will be made as the checkout page is requested.
+    # The response will be passed to the front end via an instance variable,
+    # which will be used to configure the instance of `AdyenCheckout`
     payment_methods_response = Checkout.get_payment_methods.body
 
     @resp = payment_methods_response
@@ -13,18 +19,25 @@ class CheckoutsController < ApplicationController
     @type = params[:type]
 
     # The payment template (payment_template.html.erb) will be rendered with the
-    # appropriate integration type (based on the params supplied)
+    # appropriate integration type (based on the params supplied).
     render 'payment_template'
   end
 
   def create
-    # The call to /payments will be made as the shopper makes a payment
+    # The call to /payments will be made as the shopper makes a payment.
     payment_response = Checkout.make_payment(params["paymentMethod"])
+
     # The Adyen API Library for Ruby currently returns a `Faraday` object with a
-    # `body` parameter, so we'll need to do some quick parsing of the response
+    # `body` parameter, so we'll need to do some quick parsing of the response.
     payment_response_hash = JSON.parse(payment_response.body)
 
     result_code = payment_response_hash["resultCode"]
+
+    # Alternatively, you can build your controller logic to first check for
+    # an `action` object in the /payments response. For example, Drop-in will
+    # automatically handle `action` objects and perform additional front-end
+    # actions on its own (depending on `action.type`).
+    # For more details: https://docs.adyen.com/checkout/drop-in-web#step-4-additional-front-end
     action = payment_response_hash["action"]
     paymentMethodType = params["paymentMethod"]["type"]
 
@@ -52,16 +65,6 @@ class CheckoutsController < ApplicationController
     end
   end
 
-  def confirmation
-  end
-
-  def error
-  end
-
-  def preview
-    @type = params[:type]
-  end
-
   def details
     payload = {}
     details = {}
@@ -82,5 +85,11 @@ class CheckoutsController < ApplicationController
     else
       redirect_to '/checkout/error'
     end
+  end
+
+  def confirmation
+  end
+
+  def error
   end
 end
