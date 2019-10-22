@@ -17,7 +17,7 @@ Each demo leverages Adyen's API Library for Ruby ([GitHub](https://github.com/Ad
 
 ## Requirements
 
-- Ruby 2.3.7+
+Ruby 2.4.0+
 
 ## Installation
 
