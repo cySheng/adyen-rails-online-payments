@@ -25,7 +25,7 @@
     onAdditionalDetails: handleOnAdditionalDetails
   };
 
-  // handleOnSubmit() is invoked when the buyer selects the Pay button.
+  // handleOnSubmit() is invoked when the shopper selects the Pay button.
 
   // makePayment() hits the server's #create endpoint (see available routes in
   // config/routes.rb) which will make the API call to /payments.
@@ -91,9 +91,11 @@
 
   const checkout = new AdyenCheckout(configuration);
 
+  // Note that both Drop-in and Component integrations can read the same nested
+  // `paymentMethodsConfiguration` object. If you are just integrating a
+  // Component, passing a flat configuration object into create() works fine, too.
   const integration = checkout
     .create(type, {
-      // Drop-in currently accepts a nested paymentMethodsConfiguration object.
       paymentMethodsConfiguration: {
         ideal: {
           showImage: true
@@ -102,16 +104,13 @@
           hasHolderName: true,
           holderNameRequired: true,
           name: "Credit or debit card",
-        }
-      },
-      // A Component currently accepts a flat configuration object.
-      showPayButton: true,
-      amount: {
-        value: 1000,
-        currency: "EUR"
-      },
-      hasHolderName: true,
-      holderNameRequired: true
+          showPayButton: true,
+          amount: {
+            value: 1000,
+            currency: "EUR"
+          }
+        },
+      }
     })
     .mount(`#${type}`);
 </script>
